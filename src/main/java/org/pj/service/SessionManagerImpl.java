@@ -13,12 +13,13 @@ import redis.clients.jedis.params.SetParams;
 
 import java.sql.Timestamp;
 
-public class SessionManagerImpl implements SessionManager {
+public class SessionManagerImpl implements ISessionManager {
     private static final Logger logger = LogManager.getLogger(SessionManagerImpl.class);
 
     private final ObjectMapper objectMapper;
     private static final int SESSION_TIMEOUT = 1800; // 30 phút
     private final RedisClient redisClient;
+    private static final String SESSION_PREFIX = "session:";
 
     public SessionManagerImpl(RedisClient redisClient) {
         logger.info("Initializing RedisSessionManager");
@@ -29,11 +30,11 @@ public class SessionManagerImpl implements SessionManager {
     }
 
     @Override
-    public Session createSession(String sessionId, Session session) {
+    public void createSession(String sessionId, Session session) {
         logger.info("Begin createSession");
 
         try (Jedis jedis = redisClient.getJedis()) {
-            String key = String.format("session:%s", sessionId);
+            String key = new StringBuilder(SESSION_PREFIX).append(sessionId).toString();
             String value = objectMapper.writeValueAsString(session);
 
             // Sử dụng SET với tùy chọn NX để đảm bảo không ghi đè nếu key đã tồn tại
@@ -46,13 +47,12 @@ public class SessionManagerImpl implements SessionManager {
             if ("OK".equals(result)) {
                 logger.info("Session created successfully for sessionId: {}", sessionId);
             } else {
-                logger.warn("Session creation failed for sessionId: {}", sessionId);
+                logger.info("Session creation failed for sessionId: {}", sessionId);
             }
+            logger.info("End createSession");
         } catch (JsonProcessingException e) {
-            logger.error("JsonProcessingException in createSession: {}", e.getMessage(), e);
+            logger.error("JsonProcessingException in createSession:", e);
         }
-        logger.info("End createSession");
-        return session;
     }
 
     @Override
@@ -60,7 +60,7 @@ public class SessionManagerImpl implements SessionManager {
         logger.info("Begin getSession");
         Session session = null;
         try (Jedis jedis = redisClient.getJedis()) {
-            String key = String.format("session:%s", sessionId);
+            String key = new StringBuilder(SESSION_PREFIX).append(sessionId).toString();
             String value = jedis.get(key);
             if (value != null) {
                 jedis.expire(key, SESSION_TIMEOUT); // Cập nhật thời gian hết hạn cho session
@@ -69,12 +69,12 @@ public class SessionManagerImpl implements SessionManager {
                 updateSession(sessionId, session); // Cập nhật session
                 logger.info("Session retrieved successfully for sessionId: {}", sessionId);
             } else {
-                logger.warn("Session not found for sessionId: {}", sessionId);
+                logger.info("Session not found for sessionId: {}", sessionId);
             }
+            logger.info("End getSession");
         } catch (Exception e) {
-            logger.error("Exception in getSession: {}", e.getMessage(), e);
+            logger.error("Exception in getSession:", e);
         }
-        logger.info("End getSession");
         return session;
     }
 
@@ -82,7 +82,7 @@ public class SessionManagerImpl implements SessionManager {
     public void updateSession(String sessionId, Session session) {
         logger.info("Begin updateSession");
         try (Jedis jedis = redisClient.getJedis()) {
-            String key = String.format("session:%s", sessionId);
+            String key = new StringBuilder(SESSION_PREFIX).append(sessionId).toString();
             String value = objectMapper.writeValueAsString(session);
 
             SetParams params = new SetParams().xx().ex(SESSION_TIMEOUT); // xx: chỉ update nếu key tồn tại
@@ -91,30 +91,30 @@ public class SessionManagerImpl implements SessionManager {
             if ("OK".equals(result)) {
                 logger.info("Session updated successfully for sessionId: {}", sessionId);
             } else {
-                logger.warn("Session update failed for sessionId: {}", sessionId);
+                logger.info("Session update failed for sessionId: {}", sessionId);
             }
+            logger.info("End updateSession");
         } catch (JsonProcessingException e) {
-            logger.error("JsonProcessingException in updateSession: {}", e.getMessage(), e);
+            logger.error("Exception in updateSession:", e);
         }
-        logger.info("End updateSession");
     }
 
     @Override
     public void deleteSession(String sessionId) {
         logger.info("Begin deleteSession");
         try (Jedis jedis = redisClient.getJedis()) {
-            String key = String.format("session:%s", sessionId);
+            String key = new StringBuilder(SESSION_PREFIX).append(sessionId).toString();
             long result = jedis.del(key);
 
-            if (result == 1) {
+            if (1 == result) {
                 logger.info("Session deleted successfully for sessionId: {}", sessionId);
             } else {
-                logger.warn("Session deletion failed for sessionId: {}", sessionId);
+                logger.info("Session deletion failed for sessionId: {}", sessionId);
             }
+            logger.info("End deleteSession");
         }
         catch (Exception e) {
-            logger.error("Exception in deleteSession: {}", e.getMessage(), e);
+            logger.error("Exception in deleteSession:", e);
         }
-        logger.info("End deleteSession");
     }
 }

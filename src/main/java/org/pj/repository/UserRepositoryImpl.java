@@ -5,8 +5,8 @@ import org.pj.model.User;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserRepositoryImpl implements UserRepository {
-    private Map<String, User> userStore = new HashMap<>();
+public class UserRepositoryImpl implements IUserRepository {
+    private final Map<String, User> userStore = new HashMap<>();
 
     public UserRepositoryImpl() {
         userStore.put("giangdh", new User("1", "giangdh", "G@123"));
