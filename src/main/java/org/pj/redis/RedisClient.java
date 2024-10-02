@@ -5,28 +5,31 @@ import redis.clients.jedis.JedisPool;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisClient {
     private static final Logger logger = LogManager.getLogger(RedisClient.class);
 
-    private JedisPool jedisPool;
+    private final JedisPool jedisPool;
 
-    private RedisClient() {
-        logger.info("Initializing RedisClient");
-        jedisPool = new JedisPool("localhost", 6379);
-    }
-
-    // Lớp nội bộ tĩnh
-    private static class RedisClientHelper {
-        private static final RedisClient INSTANCE = new RedisClient();
-    }
-
-    public static RedisClient getInstance() {
-        return RedisClientHelper.INSTANCE;
+    public RedisClient(String host, int port) {
+        logger.info("Initializing RedisClient with connection pool");
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setMaxTotal(25);
+        poolConfig.setMaxIdle(10);
+        poolConfig.setMinIdle(5);
+        poolConfig.setMaxWaitMillis(2000);
+        jedisPool = new JedisPool(poolConfig, host, port);
     }
 
     public Jedis getJedis() {
         logger.info("Getting Jedis resource from pool");
         return jedisPool.getResource();
+    }
+
+    public void close() {
+        if (jedisPool != null) {
+            jedisPool.close();
+        }
     }
 }

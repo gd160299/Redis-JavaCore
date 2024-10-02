@@ -2,6 +2,7 @@ package org.pj;
 
 import org.pj.model.Session;
 import org.pj.model.User;
+import org.pj.redis.RedisClient;
 import org.pj.repository.UserRepository;
 import org.pj.repository.UserRepositoryImpl;
 import org.pj.service.SessionManager;
@@ -12,8 +13,9 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
+        RedisClient redisClient = new RedisClient("localhost", 6379);
+        SessionManager sessionManager = new SessionManagerImpl(redisClient);
         UserRepository userRepository = new UserRepositoryImpl();
-        SessionManager sessionManager = new SessionManagerImpl();
         Scanner scanner = new Scanner(System.in);
 
         System.out.print("Nhập tên đăng nhập: ");
@@ -65,7 +67,7 @@ public class Main {
         } else {
             System.out.println("Tên đăng nhập hoặc mật khẩu không đúng.");
         }
-
+        redisClient.close();
         scanner.close();
     }
 }
