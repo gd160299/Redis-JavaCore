@@ -20,6 +20,7 @@ public class SessionManagerImpl implements ISessionManager {
     private static final int SESSION_TIMEOUT = 1800; // 30 phút
     private final RedisClient redisClient;
     private static final String SESSION_PREFIX = "session:";
+    private static final Integer DELETE_SUCCESSFUL = 1;
 
     public SessionManagerImpl(RedisClient redisClient) {
         logger.info("Initializing RedisSessionManager");
@@ -102,11 +103,13 @@ public class SessionManagerImpl implements ISessionManager {
     @Override
     public void deleteSession(String sessionId) {
         logger.info("Begin deleteSession");
-        try (Jedis jedis = redisClient.getJedis()) {
+        Jedis jedis = null;
+        try {
+            jedis = redisClient.getJedis();
             String key = new StringBuilder(SESSION_PREFIX).append(sessionId).toString();
             long result = jedis.del(key);
 
-            if (1 == result) {
+            if (DELETE_SUCCESSFUL == result) {
                 logger.info("Session deleted successfully for sessionId: {}", sessionId);
             } else {
                 logger.info("Session deletion failed for sessionId: {}", sessionId);

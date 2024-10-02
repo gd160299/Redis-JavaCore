@@ -19,19 +19,21 @@ public class Main {
 
     public static void main(String[] args) {
 
-            RedisClient redisClient = new RedisClient("localhost", 6379);
-            ISessionManager ISessionManager = new SessionManagerImpl(redisClient);
+            RedisClient redisClient = null;
+            ISessionManager sessionManager;
+            Scanner scanner = null;
+            // Xác thực người dùng
+        try {
+            redisClient = new RedisClient("localhost", 6379);
+            sessionManager = new SessionManagerImpl(redisClient);
             IUserRepository IUserRepository = new UserRepositoryImpl();
-            Scanner scanner = new Scanner(System.in);
+            scanner = new Scanner(System.in);
 
             System.out.print("Nhập tên đăng nhập: ");
             String username = scanner.nextLine();
 
             System.out.print("Nhập mật khẩu: ");
             String password = scanner.nextLine();
-
-            // Xác thực người dùng
-        try {
             User user = IUserRepository.findByUsername(username);
             if (user != null && user.getPassword().equals(password)) {
                 // Tạo session ID (mã hóa)
@@ -39,7 +41,7 @@ public class Main {
 
                 // Tạo phiên làm việc
                 Session session = new Session(sessionId, user);
-                ISessionManager.createSession(sessionId, session);
+                sessionManager.createSession(sessionId, session);
 
                 System.out.println("Đăng nhập thành công. Session ID: " + sessionId);
 
@@ -51,7 +53,7 @@ public class Main {
                     int choice = Integer.parseInt(scanner.nextLine());
 
                     if (choice == 1) {
-                        Session currentSession = ISessionManager.getSession(sessionId);
+                        Session currentSession = sessionManager.getSession(sessionId);
                         if (currentSession != null) {
                             System.out.println("Phiên làm việc của bạn:");
                             System.out.println("Session ID: " + currentSession.getSessionId());
@@ -64,7 +66,7 @@ public class Main {
                         }
                     } else if (choice == 2) {
                         // Đăng xuất
-                        ISessionManager.deleteSession(sessionId);
+                        sessionManager.deleteSession(sessionId);
                         System.out.println("Đăng xuất thành công.");
                         break;
                     } else {
